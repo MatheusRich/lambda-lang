@@ -26,19 +26,33 @@ impl TokenStream {
             None => return None,
         }
 
+        if ch == '#' {
+            self.skip_comment();
+            return self.read_next();
+        }
+
         if is_punc(&ch) {
             return Some(Token::Punc {
                 value: String::from(self.input.next()?),
             });
         }
 
-        self.input.croak(&format!("Can't handle character: {:?}", ch));
+        self.syntax_error(&format!("Can't handle character: {:?}", ch));
 
         None
     }
 
+    fn skip_comment(&mut self) {
+        self.read_while(|c| *c != '\n');
+        self.input.next(); // reads the '\n' in the end
+    }
+
     fn read_while(&mut self, test: fn(&char) -> bool) -> String {
         self.input.read_while(test)
+    }
+
+    fn syntax_error(&self, msg: &str) {
+        self.input.croak(&format!("SYNTAX ERROR: {}", msg));
     }
 }
 

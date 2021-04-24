@@ -4,7 +4,7 @@ mod token_stream;
 use token::Token;
 
 fn main() {
-    let input = String::from(". \t()[]{},;");
+    let input = String::from("# asdf 123\n .\t()[]{},;");
     let input_stream = input_stream::InputStream::new(input);
     let mut token_stream = token_stream::TokenStream::new(input_stream);
 
