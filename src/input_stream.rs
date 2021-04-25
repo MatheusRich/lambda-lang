@@ -38,7 +38,7 @@ impl InputStream {
         c
     }
 
-    pub fn read_while(&mut self, test: fn(&char) -> bool) -> String {
+    pub fn read_while(&mut self, mut test: impl FnMut(&char) -> bool) -> String {
         let mut str = String::new();
 
         while let Some(c) = self.peek() {

@@ -1,5 +1,5 @@
-use super::input_stream::InputStream;
-use super::token::Token;
+use super::InputStream;
+use super::Token;
 
 pub struct TokenStream {
     keywords: String,
@@ -31,9 +31,19 @@ impl TokenStream {
             return self.read_next();
         }
 
+        if is_digit(&ch) {
+            return Some(self.read_number());
+        }
+
         if is_punc(&ch) {
             return Some(Token::Punc {
                 value: String::from(self.input.next()?),
+            });
+        }
+
+        if is_op_char(&ch) {
+            return Some(Token::Op {
+                value: self.read_while(is_op_char),
             });
         }
 
@@ -47,7 +57,28 @@ impl TokenStream {
         self.input.next(); // reads the '\n' in the end
     }
 
-    fn read_while(&mut self, test: fn(&char) -> bool) -> String {
+    fn read_number(&mut self) -> Token {
+        let mut has_dot = false;
+        let number: String = self.read_while(|c| {
+            if *c == '.' {
+                if has_dot {
+                    return false;
+                }
+
+                has_dot = true;
+
+                return true;
+            }
+
+            is_digit(c)
+        });
+
+        Token::Num {
+            value: number.parse().unwrap(),
+        }
+    }
+
+    fn read_while(&mut self, test: impl FnMut(&char) -> bool) -> String {
         self.input.read_while(test)
     }
 
@@ -62,4 +93,12 @@ pub fn is_whitespace(c: &char) -> bool {
 
 fn is_punc(c: &char) -> bool {
     ",;(){}[]".contains(c.clone())
+}
+
+fn is_op_char(c: &char) -> bool {
+    "+-*/%=&|<>!".contains(c.clone())
+}
+
+fn is_digit(c: &char) -> bool {
+    c.is_ascii_digit()
 }
