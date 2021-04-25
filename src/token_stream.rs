@@ -34,6 +34,10 @@ impl TokenStream {
             return self.read_next();
         }
 
+        if ch == '"' {
+            return Some(self.read_string());
+        }
+
         if is_digit(&ch) {
             return Some(self.read_number());
         }
@@ -62,6 +66,28 @@ impl TokenStream {
     fn skip_comment(&mut self) {
         self.read_while(|c| *c != '\n');
         self.input.next(); // reads the '\n' in the end
+    }
+
+    fn read_string(&mut self) -> Token {
+        self.input.next(); // reads the quote
+        let (mut escaped, mut string) = (false, String::from(""));
+
+        while let Some(c) = self.input.next() {
+            if escaped {
+                string.push(c);
+                escaped = false;
+            } else if c == '\\' {
+                escaped = true;
+            } else if c == '"' {
+                return Token::Str { value: string };
+            } else {
+                string.push(c);
+            }
+        }
+
+        self.syntax_error("Unterminated string");
+
+        Token::Error
     }
 
     fn read_number(&mut self) -> Token {

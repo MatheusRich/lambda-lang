@@ -5,4 +5,5 @@ pub enum Token {
     Kw { value: String },
     Var { value: String },
     Op { value: String },
+    Error,
 }
