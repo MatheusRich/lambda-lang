@@ -2,7 +2,7 @@ use super::InputStream;
 use super::Token;
 
 pub struct TokenStream {
-    keywords: String,
+    keywords: Vec<String>,
     current: Option<Token>,
     input: InputStream,
 }
@@ -10,7 +10,10 @@ pub struct TokenStream {
 impl TokenStream {
     pub fn new(input: InputStream) -> TokenStream {
         TokenStream {
-            keywords: String::from("if then else lambda λ true false"),
+            keywords: "if then else lambda λ true false"
+                .split(" ")
+                .map(str::to_string)
+                .collect(),
             current: None,
             input: input,
         }
@@ -33,6 +36,10 @@ impl TokenStream {
 
         if is_digit(&ch) {
             return Some(self.read_number());
+        }
+
+        if is_id_start(&ch) {
+            return Some(self.read_identifier());
         }
 
         if is_punc(&ch) {
@@ -73,6 +80,16 @@ impl TokenStream {
         }
     }
 
+    fn read_identifier(&mut self) -> Token {
+        let id = self.read_while(is_id);
+
+        if self.is_keyword(&id) {
+            Token::Kw { value: id }
+        } else {
+            Token::Var { value: id }
+        }
+    }
+
     fn read_while(&mut self, test: impl FnMut(&char) -> bool) -> String {
         self.input.read_while(test)
     }
@@ -80,9 +97,13 @@ impl TokenStream {
     fn syntax_error(&self, msg: &str) {
         self.input.croak(&format!("SYNTAX ERROR: {}", msg));
     }
+
+    fn is_keyword(&self, id: &String) -> bool {
+        self.keywords.contains(id)
+    }
 }
 
-pub fn is_whitespace(c: &char) -> bool {
+fn is_whitespace(c: &char) -> bool {
     c.is_ascii_whitespace()
 }
 
@@ -94,6 +115,14 @@ fn is_op_char(c: &char) -> bool {
     "+-*/%=&|<>!".contains(c.clone())
 }
 
+fn is_id_start(c: &char) -> bool {
+    c.is_ascii_alphabetic() || *c == '_' || *c == 'λ'
+}
+
 fn is_digit(c: &char) -> bool {
     c.is_ascii_digit()
+}
+
+fn is_id(c: &char) -> bool {
+    is_id_start(c) || "?!-<>=0123456789".contains(c.clone())
 }
