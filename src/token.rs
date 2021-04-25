@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub enum Token {
     Punc { value: String },
     Num { value: f64 },
