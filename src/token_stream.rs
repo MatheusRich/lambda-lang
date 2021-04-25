@@ -58,20 +58,15 @@ impl TokenStream {
     }
 
     fn read_number(&mut self) -> Token {
-        let mut has_dot = false;
-        let number: String = self.read_while(|c| {
-            if *c == '.' {
-                if has_dot {
-                    return false;
-                }
+        let mut number = self.read_while(is_digit);
 
-                has_dot = true;
-
-                return true;
+        if let Some(c) = self.input.peek() {
+            if c == '.' {
+                number.push('.');
+                self.input.next();
+                number += &self.read_while(is_digit);
             }
-
-            is_digit(c)
-        });
+        }
 
         Token::Num {
             value: number.parse().unwrap(),
