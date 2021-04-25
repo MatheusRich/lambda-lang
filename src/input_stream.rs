@@ -27,7 +27,7 @@ impl InputStream {
             Some(c) => {
                 if c == '\n' {
                     self.line += 1;
-                    self.col = 0;
+                    self.col = 1;
                 } else {
                     self.col += 1;
                 }
