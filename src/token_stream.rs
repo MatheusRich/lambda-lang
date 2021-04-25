@@ -19,7 +19,37 @@ impl TokenStream {
         }
     }
 
-    pub fn read_next(&mut self) -> Option<Token> {
+    pub fn next(&mut self) -> Option<Token> {
+        let current = self.current.clone();
+        self.current = None;
+
+        match current {
+            Some(token) => Some(token),
+            None => {
+                let token = self.read_next();
+
+                token
+            }
+        }
+    }
+
+    pub fn peek(&mut self) -> Option<Token> {
+        if self.current.is_none() {
+            self.current = self.read_next();
+        }
+
+        self.current.clone()
+    }
+
+    pub fn is_eof(&mut self) -> bool {
+        return self.peek().is_none();
+    }
+
+    pub fn croak(&self, msg: &str) {
+        self.input.croak(msg)
+    }
+
+    fn read_next(&mut self) -> Option<Token> {
         self.read_while(is_whitespace);
 
         let ch: char;
