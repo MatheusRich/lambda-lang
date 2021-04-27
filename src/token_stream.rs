@@ -164,11 +164,11 @@ fn is_whitespace(c: &char) -> bool {
 }
 
 fn is_punc(c: &char) -> bool {
-    ",;(){}[]".contains(c.clone())
+    ",;(){}[]".contains(*c)
 }
 
 fn is_op_char(c: &char) -> bool {
-    "+-*/%=&|<>!".contains(c.clone())
+    "+-*/%=&|<>!".contains(*c)
 }
 
 fn is_id_start(c: &char) -> bool {
@@ -180,5 +180,5 @@ fn is_digit(c: &char) -> bool {
 }
 
 fn is_id(c: &char) -> bool {
-    is_id_start(c) || "?!-<>=0123456789".contains(c.clone())
+    is_id_start(c) || "?!-<>=0123456789".contains(*c)
 }
