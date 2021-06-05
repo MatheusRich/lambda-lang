@@ -20,7 +20,7 @@ impl TokenStream {
     }
 
     pub fn next(&mut self) -> Option<Token> {
-        let current = self.current.clone();
+        let current = self.current.clone(); // TODO: I think I can move here
         self.current = None;
 
         match current {
@@ -100,7 +100,8 @@ impl TokenStream {
 
     fn read_string(&mut self) -> Token {
         self.input.next(); // reads the quote
-        let (mut escaped, mut string) = (false, String::from(""));
+        let mut escaped = false;
+        let mut string = String::from("");
 
         while let Some(c) = self.input.next() {
             if escaped {
