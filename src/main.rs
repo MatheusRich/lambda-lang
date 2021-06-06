@@ -68,6 +68,39 @@ mod tests {
 
     #[test]
 
+    fn it_parses_if_with_then() {
+        let input = "if 0 then 1;";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[Expression::If {
+                cond: literal("num", "0"),
+                then: literal("num", "1.0"),
+                otherwise: None,
+            }],
+            &result,
+        );
+    }
+
+    #[test]
+    fn it_parses_if_then_else() {
+        let input = "if 0 then 1 else 2;";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[Expression::If {
+                cond: literal("num", "0"),
+                then: literal("num", "1.0"),
+                otherwise: Some(literal("num", "2.0")),
+            }],
+            &result,
+        );
+    }
+
+    #[test]
+
     fn it_ignores_comments() {
         let input = "# hi i am a comment\n1;";
 

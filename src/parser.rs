@@ -113,7 +113,10 @@ impl Parser {
                 return exp;
             }
             // if (is_punc("{")) return parse_prog();
-            // if (is_kw("if")) return parse_if();
+            if self.is_kw("if") {
+                return self.parse_if();
+            };
+
             if self.is_kw("true") || self.is_kw("false") {
                 return self.parse_bool();
             }
@@ -146,6 +149,31 @@ impl Parser {
         };
 
         Expression::Bool { value: is_true }
+    }
+
+    fn parse_if(&mut self) -> Expression {
+        self.skip_kw("if");
+
+        let cond = self.parse_expression();
+
+        self.skip_kw("then"); // if (!is_punc('{')) skip_kw('then');
+        let then = self.parse_expression();
+
+        Expression::If {
+            cond: Box::new(cond),
+            then: Box::new(then),
+            otherwise: self.parse_else(),
+        }
+    }
+
+    fn parse_else(&mut self) -> Option<Box<Expression>> {
+        if self.is_kw("else") {
+            self.input.next();
+
+            Some(Box::new(self.parse_expression()))
+        } else {
+            None
+        }
     }
 
     fn delimited(
@@ -188,9 +216,21 @@ impl Parser {
         if self.is_punc(expected) {
             self.input.next()
         } else {
-            self.input.syntax_error(&format!("Expected {}", expected));
+            self.input
+                .syntax_error(&format!("Expected punctuation {}", expected));
 
-            None // Some(Token::Error)
+            None
+        };
+    }
+
+    fn skip_kw(&mut self, expected: &str) {
+        if self.is_kw(expected) {
+            self.input.next()
+        } else {
+            self.input
+                .syntax_error(&format!("Expected keyword {}", expected));
+
+            None
         };
     }
 
