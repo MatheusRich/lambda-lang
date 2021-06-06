@@ -1,18 +1,19 @@
 mod input_stream;
 mod token;
 mod token_stream;
+mod parser;
+mod expression;
 use input_stream::InputStream;
 use token::Token;
+use expression::Expression;
 use token_stream::TokenStream;
+use parser::Parser;
 
 fn main() {
-    let input = String::from("# asdf 123\n \t123.45()[]{},;");
+    let input = String::from("if 123.45");
     let input_stream = InputStream::new(input);
-    let mut token_stream = TokenStream::new(input_stream);
+    let token_stream = TokenStream::new(input_stream);
+    let mut parser = Parser::new(token_stream);
 
-    if let Token::Num { value: s } = token_stream.read_next().unwrap() {
-        assert_eq!(123.45f64, s);
-    } else {
-        panic!("error!")
-    }
+    println!("PARSED SUCCESSFULLY: {:?}", parser.parse());
 }
