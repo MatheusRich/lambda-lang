@@ -14,7 +14,7 @@ pub enum Expression {
     If {
         cond: Box<Expression>,
         then: Box<Expression>,
-        r#else: Box<Expression>,
+        otherwise: Option<Box<Expression>>,
     },
     Var {
         name: String,
