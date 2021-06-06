@@ -11,24 +11,22 @@ impl TokenStream {
     pub fn new(input: InputStream) -> TokenStream {
         TokenStream {
             keywords: "if then else lambda λ true false"
-                .split(" ")
+                .split(' ')
                 .map(str::to_string)
                 .collect(),
             current: None,
-            input: input,
+            input,
         }
     }
 
     pub fn next(&mut self) -> Option<Token> {
-        let current = self.current.clone(); // TODO: I think I can move here
+        let current = self.current.clone();
         self.current = None;
 
         match current {
             Some(token) => Some(token),
             None => {
-                let token = self.read_next();
-
-                token
+                self.read_next()
             }
         }
     }

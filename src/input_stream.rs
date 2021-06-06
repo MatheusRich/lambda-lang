@@ -11,7 +11,7 @@ impl InputStream {
             pos: 0,
             line: 1,
             col: 1,
-            input: input,
+            input,
         }
     }
 
@@ -23,16 +23,13 @@ impl InputStream {
         let c = self.input.chars().nth(self.pos as usize);
         self.pos += 1;
 
-        match c {
-            Some(c) => {
-                if c == '\n' {
-                    self.line += 1;
-                    self.col = 1;
-                } else {
-                    self.col += 1;
-                }
+        if let Some(c) = c {
+            if c == '\n' {
+                self.line += 1;
+                self.col = 1;
+            } else {
+                self.col += 1;
             }
-            _ => {}
         }
 
         c
