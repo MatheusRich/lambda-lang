@@ -42,10 +42,14 @@ impl TokenStream {
     }
 
     pub fn is_eof(&mut self) -> bool {
-        return self.peek().is_none();
+        self.peek().is_none()
     }
 
-    pub fn croak(&self, msg: &str) {
+    pub fn syntax_error(&self, msg: &str) {
+        self.croak(&format!("SYNTAX ERROR: {}", msg));
+    }
+
+    fn croak(&self, msg: &str) {
         self.input.croak(msg)
     }
 
@@ -149,10 +153,6 @@ impl TokenStream {
 
     fn read_while(&mut self, test: impl FnMut(&char) -> bool) -> String {
         self.input.read_while(test)
-    }
-
-    fn syntax_error(&self, msg: &str) {
-        self.input.croak(&format!("SYNTAX ERROR: {}", msg));
     }
 
     fn is_keyword(&self, id: &String) -> bool {
