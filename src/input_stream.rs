@@ -55,8 +55,6 @@ impl InputStream {
     }
 
     pub fn croak(&self, msg: &str) {
-        println!("{} at line {}, col {}", msg, self.line, self.col);
-
-        std::process::exit(-1);
+        panic!("{} at line {}, col {}", msg, self.line, self.col);
     }
 }
