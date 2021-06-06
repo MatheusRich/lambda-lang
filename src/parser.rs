@@ -42,9 +42,7 @@ impl Parser {
         while !self.input.is_eof() {
             expressions.push(self.parse_expression());
 
-            if !self.input.is_eof() {
-                self.skip_punc(";");
-            }
+            self.skip_punc(";");
         }
 
         expressions
@@ -116,7 +114,9 @@ impl Parser {
             }
             // if (is_punc("{")) return parse_prog();
             // if (is_kw("if")) return parse_if();
-            // if (is_kw("true") || is_kw("false")) return parse_bool();
+            if self.is_kw("true") || self.is_kw("false") {
+                return self.parse_bool();
+            }
             // if (is_kw("lambda") || is_kw("λ")) {
             //     input.next();
             //     return parse_lambda();
@@ -124,10 +124,10 @@ impl Parser {
 
             // if (tok.type == "var" || tok.type == "num" || tok.type == "str") return tok;
 
-            match self.input.peek() {
-                Some(Token::Num { value }) => Expression::Num { value },
-                _ => {
-                    self.unexpected();
+            match self.input.next().expect("Should not reach this") {
+                Token::Num { value } => Expression::Num { value },
+                token => {
+                    self.unexpected(token);
 
                     Expression::Error {}
                 }
@@ -135,6 +135,17 @@ impl Parser {
         };
 
         self.maybe_call(atom)
+    }
+
+    fn parse_bool(&mut self) -> Expression {
+        let mut is_true = false;
+
+        match self.input.next().expect("Should not get here") {
+            Token::Kw { value } => is_true = value == "true",
+            _ => panic!("Should not get here"),
+        };
+
+        Expression::Bool { value: is_true }
     }
 
     fn delimited(
@@ -163,7 +174,7 @@ impl Parser {
 
             let expr = match parser {
                 "expression" => self.parse_expression(),
-                _ => panic!("Unknown parser {}", parser)
+                _ => panic!("Unknown parser {}", parser),
             };
 
             vec.push(Box::new(expr));
@@ -177,7 +188,7 @@ impl Parser {
         if self.is_punc(expected) {
             self.input.next()
         } else {
-            self.input.syntax_error(&format!("Expected {} here", expected));
+            self.input.syntax_error(&format!("Expected {}", expected));
 
             None // Some(Token::Error)
         };
@@ -197,8 +208,15 @@ impl Parser {
         }
     }
 
-    fn unexpected(&mut self) {
-        let token = self.input.peek().unwrap();
-        self.input.syntax_error(&format!("Unexpected token '{}'", token));
+    fn is_kw(&mut self, expected: &str) -> bool {
+        match self.input.peek() {
+            Some(Token::Kw { value }) => value == expected,
+            _ => false,
+        }
+    }
+
+    fn unexpected(&mut self, token: Token) {
+        self.input
+            .syntax_error(&format!("Unexpected token '{}'", token));
     }
 }

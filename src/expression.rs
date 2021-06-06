@@ -1,4 +1,4 @@
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Expression {
     Lambda {
         vars: Vec<Box<Expression>>,
