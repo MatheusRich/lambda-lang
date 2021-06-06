@@ -141,7 +141,7 @@ impl Parser {
     }
 
     fn parse_bool(&mut self) -> Expression {
-        let mut is_true = false;
+        let is_true;
 
         match self.input.next().expect("Should not get here") {
             Token::Kw { value } => is_true = value == "true",
