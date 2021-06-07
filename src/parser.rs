@@ -125,10 +125,9 @@ impl Parser {
             //     return parse_lambda();
             // }
 
-            // if (tok.type == "var" || tok.type == "num" || tok.type == "str") return tok;
-
             match self.input.next().expect("Unexpected end of tokens") {
                 Token::Num { value } => Expression::Num { value },
+                Token::Str { value } => Expression::String { value },
                 Token::Var { value } => Expression::Var { name: value },
                 token => {
                     self.unexpected(token);

@@ -33,7 +33,11 @@ mod tests {
     }
 
     fn assert_vec_eq(va: &[Expression], vb: &[Expression]) {
-        assert!((va.len() == vb.len()) && va.iter().zip(vb).all(|(a, b)| a == b))
+        assert_eq!(va.len(), vb.len());
+
+        for (a, b) in va.iter().zip(vb) {
+            assert_eq!(a, b);
+        }
     }
 
     fn literal(kind: &str, value: &str) -> Box<Expression> {
@@ -51,7 +55,6 @@ mod tests {
     }
 
     #[test]
-
     fn it_parses_a_number() {
         let input = "123.45;";
 
@@ -61,7 +64,6 @@ mod tests {
     }
 
     #[test]
-
     fn it_parses_a_group() {
         let input = "(((123.45)));";
 
@@ -71,7 +73,6 @@ mod tests {
     }
 
     #[test]
-
     fn it_parses_booleans() {
         let input = "true;false;";
 
@@ -87,7 +88,6 @@ mod tests {
     }
 
     #[test]
-
     fn it_parses_variables() {
         let input = "a_variable;another-variable;";
 
@@ -107,7 +107,26 @@ mod tests {
     }
 
     #[test]
+    fn it_parses_strings() {
+        let input = "\"a string\";
+                    \"other \\\" string\";";
 
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[
+                Expression::String {
+                    value: String::from("a string"),
+                },
+                Expression::String {
+                    value: String::from("other \" string"),
+                },
+            ],
+            &result,
+        );
+    }
+
+    #[test]
     fn it_parses_if_with_then() {
         let input = "if 0 then 1;";
 
@@ -140,7 +159,6 @@ mod tests {
     }
 
     #[test]
-
     fn it_ignores_comments() {
         let input = "# hi i am a comment\n1;";
 
