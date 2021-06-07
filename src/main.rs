@@ -88,6 +88,26 @@ mod tests {
 
     #[test]
 
+    fn it_parses_variables() {
+        let input = "a_variable;another-variable;";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[
+                Expression::Var {
+                    name: String::from("a_variable"),
+                },
+                Expression::Var {
+                    name: String::from("another-variable"),
+                },
+            ],
+            &result,
+        );
+    }
+
+    #[test]
+
     fn it_parses_if_with_then() {
         let input = "if 0 then 1;";
 
