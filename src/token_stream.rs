@@ -135,7 +135,7 @@ impl TokenStream {
         }
 
         Token::Num {
-            value: number.parse().expect(format!("Couldn't parse number {}", number)),
+            value: number.parse().expect("Couldn't parse number"),
         }
     }
 
