@@ -294,13 +294,6 @@ impl Parser {
         }
     }
 
-    fn is_op(&mut self, expected: &str) -> bool {
-        match self.input.peek() {
-            Some(Token::Op { value }) => expected == "any" || value == expected,
-            _ => false,
-        }
-    }
-
     fn is_kw(&mut self, expected: &str) -> bool {
         match self.input.peek() {
             Some(Token::Kw { value }) => value == expected,
