@@ -1,4 +1,4 @@
-use super::{Expression, Token, TokenStream};
+use super::{Expr, Token, TokenStream};
 use std::collections::HashMap;
 
 pub struct Parser {
@@ -32,12 +32,12 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Vec<Expression> {
+    pub fn parse(&mut self) -> Vec<Expr> {
         self.parse_toplevel()
     }
 
-    fn parse_toplevel(&mut self) -> Vec<Expression> {
-        let mut expressions = Vec::<Expression>::new();
+    fn parse_toplevel(&mut self) -> Vec<Expr> {
+        let mut expressions = Vec::<Expr>::new();
 
         while !self.input.is_eof() {
             expressions.push(self.parse_expression());
@@ -48,32 +48,32 @@ impl Parser {
         expressions
     }
 
-    fn parse_expression(&mut self) -> Expression {
+    fn parse_expression(&mut self) -> Expr {
         let left = self.parse_atom();
         let maybe_bin = self.maybe_binary(left, 0);
 
         self.maybe_call(maybe_bin)
     }
 
-    fn parse_var_name(&mut self) -> Expression {
+    fn parse_var_name(&mut self) -> Expr {
         match self.input.next() {
-            Some(Token::Var { value }) => Expression::Var { name: value },
+            Some(Token::Var { value }) => Expr::Var { name: value },
             Some(other) => {
                 self.input
                     .syntax_error(&format!("Expecting variable name, got '{}'", other));
 
-                Expression::Error
+                Expr::Error
             }
             None => {
                 self.input
                     .syntax_error("Expecting variable name, but got to end of input");
 
-                Expression::Error
+                Expr::Error
             }
         }
     }
 
-    fn maybe_call(&mut self, expr: Expression) -> Expression {
+    fn maybe_call(&mut self, expr: Expr) -> Expr {
         if self.is_punc("(") {
             self.parse_call(expr)
         } else {
@@ -81,34 +81,34 @@ impl Parser {
         }
     }
 
-    fn parse_call(&mut self, func: Expression) -> Expression {
-        Expression::Call {
+    fn parse_call(&mut self, func: Expr) -> Expr {
+        Expr::Call {
             func: Box::new(func),
             args: self.delimited("(", ")", ",", "expression"),
         }
     }
 
-    fn maybe_binary(&mut self, left: Expression, my_precedence: usize) -> Expression {
+    fn maybe_binary(&mut self, left: Expr, my_precedence: usize) -> Expr {
         match self.input.peek() {
             Some(Token::Op { value }) => self.parse_binary(left, value, my_precedence),
             _ => left,
         }
     }
 
-    fn parse_binary(&mut self, left: Expression, op: String, my_precedence: usize) -> Expression {
+    fn parse_binary(&mut self, left: Expr, op: String, my_precedence: usize) -> Expr {
         let his_precedence = self.precedence[&op];
         if his_precedence > my_precedence {
             self.input.next();
             let left = self.parse_atom();
 
             let new_left = if op == "=" {
-                Expression::Assign {
+                Expr::Assign {
                     operator: op,
                     left: Box::new(left.clone()),
                     right: Box::new(self.maybe_binary(left, his_precedence)),
                 }
             } else {
-                Expression::Binary {
+                Expr::Binary {
                     operator: op,
                     left: Box::new(left.clone()),
                     right: Box::new(self.maybe_binary(left, his_precedence)),
@@ -121,7 +121,7 @@ impl Parser {
         }
     }
 
-    fn parse_atom(&mut self) -> Expression {
+    fn parse_atom(&mut self) -> Expr {
         let atom = {
             if self.is_punc("(") {
                 self.input.next();
@@ -152,13 +152,13 @@ impl Parser {
             }
 
             match self.input.next().expect("Unexpected end of tokens") {
-                Token::Num { value } => Expression::Num { value },
-                Token::Str { value } => Expression::String { value },
-                Token::Var { value } => Expression::Var { name: value },
+                Token::Num { value } => Expr::Num { value },
+                Token::Str { value } => Expr::String { value },
+                Token::Var { value } => Expr::Var { name: value },
                 token => {
                     self.unexpected(token);
 
-                    Expression::Error {}
+                    Expr::Error {}
                 }
             }
         };
@@ -166,7 +166,7 @@ impl Parser {
         self.maybe_call(atom)
     }
 
-    fn parse_bool(&mut self) -> Expression {
+    fn parse_bool(&mut self) -> Expr {
         let is_true;
 
         match self.input.next().expect("Should not get here") {
@@ -174,10 +174,10 @@ impl Parser {
             _ => panic!("Should not get here"),
         };
 
-        Expression::Bool { value: is_true }
+        Expr::Bool { value: is_true }
     }
 
-    fn parse_if(&mut self) -> Expression {
+    fn parse_if(&mut self) -> Expr {
         self.skip_kw("if");
 
         let cond = self.parse_expression();
@@ -188,14 +188,14 @@ impl Parser {
 
         let then = self.parse_expression();
 
-        Expression::If {
+        Expr::If {
             cond: Box::new(cond),
             then: Box::new(then),
             otherwise: self.parse_else(),
         }
     }
 
-    fn parse_else(&mut self) -> Option<Box<Expression>> {
+    fn parse_else(&mut self) -> Option<Box<Expr>> {
         if self.is_kw("else") {
             self.input.next();
 
@@ -205,31 +205,31 @@ impl Parser {
         }
     }
 
-    fn parse_prog(&mut self) -> Expression {
+    fn parse_prog(&mut self) -> Expr {
         let prog = self.delimited("{", "}", ";", "expression");
 
         if prog.is_empty() {
-            return Expression::Bool { value: false };
+            return Expr::Bool { value: false };
         }
 
         if prog.len() == 1 {
             return prog.first().unwrap().clone();
         }
 
-        Expression::Prog { prog }
+        Expr::Prog { prog }
     }
 
-    fn parse_lambda(&mut self, lambda_sign: &str) -> Expression {
+    fn parse_lambda(&mut self, lambda_sign: &str) -> Expr {
         self.skip_kw(lambda_sign);
 
-        Expression::Lambda {
+        Expr::Lambda {
             vars: self.delimited("(", ")", ",", "var_name"),
             body: Box::new(self.parse_expression()),
         }
     }
 
-    fn delimited(&mut self, start: &str, stop: &str, sep: &str, parser: &str) -> Vec<Expression> {
-        let mut vec = Vec::<Expression>::new();
+    fn delimited(&mut self, start: &str, stop: &str, sep: &str, parser: &str) -> Vec<Expr> {
+        let mut vec = Vec::<Expr>::new();
         let mut first = true;
         // let mut i = 1;
 

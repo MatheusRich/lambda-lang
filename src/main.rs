@@ -1,9 +1,9 @@
-mod expression;
+mod expr;
 mod input_stream;
 mod parser;
 mod token;
 mod token_stream;
-use expression::Expression;
+use expr::Expr;
 use input_stream::InputStream;
 use parser::Parser;
 use token::Token;
@@ -26,13 +26,13 @@ fn main() {
 mod tests {
     use super::*;
 
-    fn parse_string(input: &str) -> Vec<Expression> {
+    fn parse_string(input: &str) -> Vec<Expr> {
         let mut parser = Parser::new(TokenStream::new(InputStream::new(String::from(input))));
 
         parser.parse()
     }
 
-    fn assert_vec_eq(va: &[Expression], vb: &[Expression]) {
+    fn assert_vec_eq(va: &[Expr], vb: &[Expr]) {
         assert_eq!(va.len(), vb.len(), "Vectors have different lengths");
 
         for (a, b) in va.iter().zip(vb) {
@@ -40,9 +40,9 @@ mod tests {
         }
     }
 
-    fn literal(kind: &str, value: &str) -> Box<Expression> {
+    fn literal(kind: &str, value: &str) -> Box<Expr> {
         match kind {
-            "num" => Box::new(Expression::Num {
+            "num" => Box::new(Expr::Num {
                 value: value.parse().expect("Invalid float"),
             }),
             _ => panic!("Don't know how to create literal {}", kind),
@@ -60,7 +60,7 @@ mod tests {
 
         let result = parse_string(input);
 
-        assert_vec_eq(&[Expression::Num { value: 123.45 }], &result);
+        assert_vec_eq(&[Expr::Num { value: 123.45 }], &result);
     }
 
     #[test]
@@ -69,7 +69,7 @@ mod tests {
 
         let result = parse_string(input);
 
-        assert_vec_eq(&[Expression::Num { value: 123.45 }], &result);
+        assert_vec_eq(&[Expr::Num { value: 123.45 }], &result);
     }
 
     #[test]
@@ -80,8 +80,8 @@ mod tests {
 
         assert_vec_eq(
             &[
-                Expression::Bool { value: true },
-                Expression::Bool { value: false },
+                Expr::Bool { value: true },
+                Expr::Bool { value: false },
             ],
             &result,
         );
@@ -95,10 +95,10 @@ mod tests {
 
         assert_vec_eq(
             &[
-                Expression::Var {
+                Expr::Var {
                     name: String::from("a_variable"),
                 },
-                Expression::Var {
+                Expr::Var {
                     name: String::from("another-variable"),
                 },
             ],
@@ -115,10 +115,10 @@ mod tests {
 
         assert_vec_eq(
             &[
-                Expression::String {
+                Expr::String {
                     value: String::from("a string"),
                 },
-                Expression::String {
+                Expr::String {
                     value: String::from("other \" string"),
                 },
             ],
@@ -133,7 +133,7 @@ mod tests {
         let result = parse_string(input);
 
         assert_vec_eq(
-            &[Expression::If {
+            &[Expr::If {
                 cond: literal("num", "0"),
                 then: literal("num", "1.0"),
                 otherwise: None,
@@ -149,7 +149,7 @@ mod tests {
         let result = parse_string(input);
 
         assert_vec_eq(
-            &[Expression::If {
+            &[Expr::If {
                 cond: literal("num", "0"),
                 then: literal("num", "1.0"),
                 otherwise: Some(literal("num", "2.0")),
@@ -171,7 +171,7 @@ mod tests {
         let result = parse_string(input);
 
         assert_vec_eq(
-            &[Expression::If {
+            &[Expr::If {
                 cond: literal("num", "0"),
                 then: literal("num", "1.0"),
                 otherwise: Some(literal("num", "2.0")),
@@ -186,7 +186,7 @@ mod tests {
 
         let result = parse_string(input);
 
-        assert_vec_eq(&[Expression::Bool { value: false }], &result);
+        assert_vec_eq(&[Expr::Bool { value: false }], &result);
     }
 
     #[test]
@@ -195,7 +195,7 @@ mod tests {
 
         let result = parse_string(input);
 
-        assert_vec_eq(&[Expression::Num { value: 1.0 }], &result);
+        assert_vec_eq(&[Expr::Num { value: 1.0 }], &result);
     }
 
     #[test]
@@ -210,10 +210,10 @@ mod tests {
         let result = parse_string(input);
 
         assert_vec_eq(
-            &[Expression::Prog {
+            &[Expr::Prog {
                 prog: vec![
-                    Expression::Num { value: 1.0 },
-                    Expression::Var {
+                    Expr::Num { value: 1.0 },
+                    Expr::Var {
                         name: String::from("a_var"),
                     },
                 ],
@@ -233,11 +233,11 @@ mod tests {
 
         assert_vec_eq(
             &[
-                Expression::Lambda {
+                Expr::Lambda {
                     vars: vec![],
                     body: literal("num", "1"),
                 },
-                Expression::Lambda {
+                Expr::Lambda {
                     vars: vec![],
                     body: literal("num", "2"),
                 },
@@ -257,12 +257,12 @@ mod tests {
         let result = parse_string(input);
 
         assert_vec_eq(
-            &[Expression::Lambda {
+            &[Expr::Lambda {
                 vars: vec![
-                    Expression::Var {
+                    Expr::Var {
                         name: String::from("a_var"),
                     },
-                    Expression::Var {
+                    Expr::Var {
                         name: String::from("other-var"),
                     },
                 ],
@@ -284,12 +284,12 @@ mod tests {
         let result = parse_string(input);
 
         assert_vec_eq(
-            &[Expression::Lambda {
+            &[Expr::Lambda {
                 vars: vec![
-                    Expression::Var {
+                    Expr::Var {
                         name: String::from("a_var"),
                     },
-                    Expression::Var {
+                    Expr::Var {
                         name: String::from("other-var"),
                     },
                 ],
@@ -307,12 +307,12 @@ mod tests {
         let result = parse_string(input);
 
         assert_vec_eq(
-            &[Expression::Lambda {
+            &[Expr::Lambda {
                 vars: vec![
-                    Expression::Var {
+                    Expr::Var {
                         name: String::from("a_var"),
                     },
-                    Expression::Var {
+                    Expr::Var {
                         name: String::from("other-var"),
                     },
                 ],
@@ -328,6 +328,6 @@ mod tests {
 
         let result = parse_string(input);
 
-        assert_vec_eq(&[Expression::Num { value: 1.0 }], &result);
+        assert_vec_eq(&[Expr::Num { value: 1.0 }], &result);
     }
 }
