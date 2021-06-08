@@ -45,6 +45,9 @@ mod tests {
             "num" => Box::new(Expr::Num {
                 value: value.parse().expect("Invalid float"),
             }),
+            "var" => Box::new(Expr::Var {
+                name: String::from(value),
+            }),
             _ => panic!("Don't know how to create literal {}", kind),
         }
     }
@@ -342,6 +345,46 @@ mod tests {
                         body: Box::new(Expr::Bool { value: false }),
                     },
                 ],
+            }],
+            &result,
+        );
+    }
+
+    #[test]
+    fn it_parses_assign_expressions() {
+        let input = "my_var = 1 + 2;";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[Expr::Assign {
+                operator: String::from("="),
+                left: literal("var", "my_var"),
+                right: Box::new(Expr::Binary {
+                    operator: String::from("+"),
+                    left: literal("num", "1"),
+                    right: literal("num", "2"),
+                }),
+            }],
+            &result,
+        );
+    }
+
+    #[test]
+    fn it_parses_binary_expressions() {
+        let input = "1 + 2 * 3;";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[Expr::Binary {
+                operator: String::from("+"),
+                left: literal("num", "1"),
+                right: Box::new(Expr::Binary {
+                    operator: String::from("*"),
+                    left: literal("num", "2"),
+                    right: literal("num", "3"),
+                }),
             }],
             &result,
         );

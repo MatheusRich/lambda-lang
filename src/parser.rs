@@ -98,20 +98,21 @@ impl Parser {
     fn parse_binary(&mut self, left: Expr, op: String, my_precedence: usize) -> Expr {
         let his_precedence = self.precedence[&op];
         if his_precedence > my_precedence {
-            self.input.next();
-            let left = self.parse_atom();
+            self.skip_op("any");
+
+            let right = self.parse_atom();
 
             let new_left = if op == "=" {
                 Expr::Assign {
                     operator: op,
                     left: Box::new(left.clone()),
-                    right: Box::new(self.maybe_binary(left, his_precedence)),
+                    right: Box::new(self.maybe_binary(right, his_precedence)),
                 }
             } else {
                 Expr::Binary {
                     operator: op,
                     left: Box::new(left.clone()),
-                    right: Box::new(self.maybe_binary(left, his_precedence)),
+                    right: Box::new(self.maybe_binary(right, his_precedence)),
                 }
             };
 
@@ -151,13 +152,17 @@ impl Parser {
                 return self.parse_lambda("λ");
             }
 
-            match self.input.next().expect("Unexpected end of tokens") {
-                Token::Num { value } => Expr::Num { value },
-                Token::Str { value } => Expr::Str { value },
-                Token::Var { value } => Expr::Var { name: value },
-                token => {
-                    self.unexpected(token);
+            match self.input.next() {
+                Some(Token::Num { value }) => Expr::Num { value },
+                Some(Token::Str { value }) => Expr::Str { value },
+                Some(Token::Var { value }) => Expr::Var { name: value },
+                Some(token) => {
+                    self.unexpected_token(token);
 
+                    Expr::Error {}
+                }
+                None => {
+                    self.input.syntax_error("Unexpected end of tokens");
                     Expr::Error {}
                 }
             }
@@ -281,6 +286,21 @@ impl Parser {
         };
     }
 
+    fn skip_op(&mut self, expected: &str) {
+        if self.is_op(expected) {
+            self.input.next()
+        } else {
+            let msg = match expected {
+                "any" => String::from("Expected operator"),
+                op => format!("Expected operator {}", op),
+            };
+
+            self.input.syntax_error(&msg);
+
+            None
+        };
+    }
+
     fn is_punc(&mut self, expected: &str) -> bool {
         match self.input.peek() {
             Some(Token::Punc { value }) => value == expected,
@@ -295,7 +315,14 @@ impl Parser {
         }
     }
 
-    fn unexpected(&mut self, token: Token) {
+    fn is_op(&mut self, expected: &str) -> bool {
+        match self.input.peek() {
+            Some(Token::Op { value }) => value == expected || expected == "any",
+            _ => false,
+        }
+    }
+
+    fn unexpected_token(&mut self, token: Token) {
         self.input
             .syntax_error(&format!("Unexpected token '{}'", token));
     }
