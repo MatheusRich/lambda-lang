@@ -115,10 +115,10 @@ mod tests {
 
         assert_vec_eq(
             &[
-                Expr::String {
+                Expr::Str {
                     value: String::from("a string"),
                 },
-                Expr::String {
+                Expr::Str {
                     value: String::from("other \" string"),
                 },
             ],
@@ -210,8 +210,8 @@ mod tests {
         let result = parse_string(input);
 
         assert_vec_eq(
-            &[Expr::Prog {
-                prog: vec![
+            &[Expr::Block {
+                exprs: vec![
                     Expr::Num { value: 1.0 },
                     Expr::Var {
                         name: String::from("a_var"),

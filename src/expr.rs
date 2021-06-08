@@ -1,13 +1,11 @@
 #[derive(PartialEq, Clone, Debug)]
-// TODO: Rename to Expr
 pub enum Expr {
     Lambda {
         vars: Vec<Expr>,
         body: Box<Expr>,
     },
-    // TODO: Rename to Block
-    Prog {
-        prog: Vec<Expr>,
+    Block {
+        exprs: Vec<Expr>,
     },
     Call {
         func: Box<Expr>,
@@ -24,8 +22,7 @@ pub enum Expr {
     Bool {
         value: bool,
     },
-    // TODO: Rename to Str
-    String {
+    Str {
         value: String,
     },
     Num {

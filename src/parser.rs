@@ -153,7 +153,7 @@ impl Parser {
 
             match self.input.next().expect("Unexpected end of tokens") {
                 Token::Num { value } => Expr::Num { value },
-                Token::Str { value } => Expr::String { value },
+                Token::Str { value } => Expr::Str { value },
                 Token::Var { value } => Expr::Var { name: value },
                 token => {
                     self.unexpected(token);
@@ -206,17 +206,17 @@ impl Parser {
     }
 
     fn parse_prog(&mut self) -> Expr {
-        let prog = self.delimited("{", "}", ";", "expression");
+        let exprs = self.delimited("{", "}", ";", "expression");
 
-        if prog.is_empty() {
+        if exprs.is_empty() {
             return Expr::Bool { value: false };
         }
 
-        if prog.len() == 1 {
-            return prog.first().unwrap().clone();
+        if exprs.len() == 1 {
+            return exprs.first().unwrap().clone();
         }
 
-        Expr::Prog { prog }
+        Expr::Block { exprs }
     }
 
     fn parse_lambda(&mut self, lambda_sign: &str) -> Expr {
