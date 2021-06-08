@@ -223,18 +223,25 @@ mod tests {
     }
 
     #[test]
-    fn it_parses_a_simple_lambda() {
+    fn it_parses_simple_lambdas() {
         let input = "
             lambda () 1;
+            λ () 2;
         ";
 
         let result = parse_string(input);
 
         assert_vec_eq(
-            &[Expression::Lambda {
-                vars: vec![],
-                body: literal("num", "1"),
-            }],
+            &[
+                Expression::Lambda {
+                    vars: vec![],
+                    body: literal("num", "1"),
+                },
+                Expression::Lambda {
+                    vars: vec![],
+                    body: literal("num", "2"),
+                },
+            ],
             &result,
         );
     }

@@ -143,10 +143,12 @@ impl Parser {
                 return self.parse_bool();
             }
 
-            if self.is_kw("lambda")
-            /*|| is_kw("λ")*/
-            {
+            if self.is_kw("lambda") {
                 return self.parse_lambda("lambda");
+            }
+
+            if self.is_kw("λ") {
+                return self.parse_lambda("λ");
             }
 
             match self.input.next().expect("Unexpected end of tokens") {
