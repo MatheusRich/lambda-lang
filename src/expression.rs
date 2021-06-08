@@ -1,15 +1,15 @@
 #[derive(PartialEq, Clone, Debug)]
 pub enum Expression {
     Lambda {
-        vars: Vec<Box<Expression>>,
+        vars: Vec<Expression>,
         body: Box<Expression>,
     },
     Prog {
-        prog: Box<Expression>,
+        prog: Vec<Expression>,
     },
     Call {
         func: Box<Expression>,
-        args: Vec<Box<Expression>>,
+        args: Vec<Expression>,
     },
     If {
         cond: Box<Expression>,
