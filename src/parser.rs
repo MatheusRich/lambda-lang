@@ -231,12 +231,9 @@ impl Parser {
     fn delimited(&mut self, start: &str, stop: &str, sep: &str, parser: &str) -> Vec<Expr> {
         let mut vec = Vec::<Expr>::new();
         let mut first = true;
-        // let mut i = 1;
 
         self.skip_punc(start);
         while !self.input.is_eof() {
-            // println!("loop #{}" , i);
-            // println!("cur token #{:?}" , self.input.peek());
             if self.is_punc(stop) {
                 break;
             }
@@ -258,7 +255,6 @@ impl Parser {
             };
 
             vec.push(expr);
-            // i += 1;
         }
         self.skip_punc(stop);
 
@@ -269,8 +265,6 @@ impl Parser {
         if self.is_punc(expected) {
             self.input.next();
         } else {
-            println!("\n\n\ncurrent: {}", self.input.peek().unwrap());
-            println!("expected: {}\n\n\n", expected);
             self.input
                 .syntax_error(&format!("Expected punctuation {}", expected));
         };
