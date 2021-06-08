@@ -33,7 +33,7 @@ mod tests {
     }
 
     fn assert_vec_eq(va: &[Expression], vb: &[Expression]) {
-        assert_eq!(va.len(), vb.len());
+        assert_eq!(va.len(), vb.len(), "Vectors have different lengths");
 
         for (a, b) in va.iter().zip(vb) {
             assert_eq!(a, b);
@@ -153,6 +153,48 @@ mod tests {
                 cond: literal("num", "0"),
                 then: literal("num", "1.0"),
                 otherwise: Some(literal("num", "2.0")),
+            }],
+            &result,
+        );
+    }
+
+    #[test]
+    fn it_parses_empty_block() {
+        let input = "{};";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(&[Expression::Bool { value: false }], &result);
+    }
+
+    #[test]
+    fn it_unwraps_block_with_just_one_expression() {
+        let input = "{1;};";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(&[Expression::Num { value: 1.0 }], &result);
+    }
+
+    #[test]
+    fn it_parses_multi_expression_block() {
+        let input = "
+        {
+            1;
+            a_var;
+        };
+        ";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[Expression::Prog {
+                prog: vec![
+                    Expression::Num { value: 1.0 },
+                    Expression::Var {
+                        name: String::from("a_var"),
+                    },
+                ],
             }],
             &result,
         );

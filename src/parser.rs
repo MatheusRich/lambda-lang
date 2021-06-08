@@ -112,7 +112,11 @@ impl Parser {
 
                 return exp;
             }
-            // if (is_punc("{")) return parse_prog();
+
+            if self.is_punc("{") {
+                return self.parse_prog();
+            }
+
             if self.is_kw("if") {
                 return self.parse_if();
             };
@@ -176,26 +180,39 @@ impl Parser {
         }
     }
 
-    fn delimited(
-        &mut self,
-        start: &str,
-        stop: &str,
-        sep: &str,
-        parser: &str,
-    ) -> Vec<Box<Expression>> {
-        let mut vec = Vec::<Box<Expression>>::new();
-        let mut first = false;
+    fn parse_prog(&mut self) -> Expression {
+        let prog = self.delimited("{", "}", ";", "expression");
+
+        if prog.is_empty() {
+            return Expression::Bool { value: false };
+        }
+
+        if prog.len() == 1 {
+            return prog.first().unwrap().clone();
+        }
+
+        Expression::Prog { prog }
+    }
+
+    fn delimited(&mut self, start: &str, stop: &str, sep: &str, parser: &str) -> Vec<Expression> {
+        let mut vec = Vec::<Expression>::new();
+        let mut first = true;
+        // let mut i = 1;
 
         self.skip_punc(start);
         while !self.input.is_eof() {
+            // println!("loop #{}" , i);
+            // println!("cur token #{:?}" , self.input.peek());
             if self.is_punc(stop) {
                 break;
             }
+
             if first {
                 first = false
             } else {
                 self.skip_punc(sep)
             }
+
             if self.is_punc(stop) {
                 break;
             }
@@ -205,7 +222,8 @@ impl Parser {
                 _ => panic!("Unknown parser {}", parser),
             };
 
-            vec.push(Box::new(expr));
+            vec.push(expr);
+            // i += 1;
         }
         self.skip_punc(stop);
 
@@ -214,12 +232,12 @@ impl Parser {
 
     fn skip_punc(&mut self, expected: &str) {
         if self.is_punc(expected) {
-            self.input.next()
+            self.input.next();
         } else {
+            println!("\n\n\ncurrent: {}", self.input.peek().unwrap());
+            println!("expected: {}\n\n\n", expected);
             self.input
                 .syntax_error(&format!("Expected punctuation {}", expected));
-
-            None
         };
     }
 
