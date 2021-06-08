@@ -79,10 +79,7 @@ mod tests {
         let result = parse_string(input);
 
         assert_vec_eq(
-            &[
-                Expr::Bool { value: true },
-                Expr::Bool { value: false },
-            ],
+            &[Expr::Bool { value: true }, Expr::Bool { value: false }],
             &result,
         );
     }
@@ -317,6 +314,34 @@ mod tests {
                     },
                 ],
                 body: literal("num", "1"),
+            }],
+            &result,
+        );
+    }
+
+    #[test]
+    fn it_parses_function_calls() {
+        let input = r#"
+            func(1, a_var, lambda() {});
+        "#;
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[Expr::Call {
+                func: Box::new(Expr::Var {
+                    name: String::from("func"),
+                }),
+                args: vec![
+                    Expr::Num { value: 1.0 },
+                    Expr::Var {
+                        name: String::from("a_var"),
+                    },
+                    Expr::Lambda {
+                        vars: vec![],
+                        body: Box::new(Expr::Bool { value: false }),
+                    },
+                ],
             }],
             &result,
         );

@@ -50,10 +50,6 @@ impl InputStream {
         str
     }
 
-    pub fn is_eof(&self) -> bool {
-        self.peek().is_none()
-    }
-
     pub fn croak(&self, msg: &str) {
         panic!("{} at line {}, col {}", msg, self.line, self.col);
     }
