@@ -55,6 +55,24 @@ impl Parser {
         self.maybe_call(maybe_bin)
     }
 
+    fn parse_var_name(&mut self) -> Expression {
+        match self.input.next() {
+            Some(Token::Var { value }) => Expression::Var { name: value },
+            Some(other) => {
+                self.input
+                    .syntax_error(&format!("Expecting variable name, got '{}'", other));
+
+                Expression::Error
+            }
+            None => {
+                self.input
+                    .syntax_error("Expecting variable name, but got to end of input");
+
+                Expression::Error
+            }
+        }
+    }
+
     fn maybe_call(&mut self, expr: Expression) -> Expression {
         if self.is_punc("(") {
             self.parse_call(expr)
@@ -124,10 +142,12 @@ impl Parser {
             if self.is_kw("true") || self.is_kw("false") {
                 return self.parse_bool();
             }
-            // if (is_kw("lambda") || is_kw("λ")) {
-            //     input.next();
-            //     return parse_lambda();
-            // }
+
+            if self.is_kw("lambda")
+            /*|| is_kw("λ")*/
+            {
+                return self.parse_lambda("lambda");
+            }
 
             match self.input.next().expect("Unexpected end of tokens") {
                 Token::Num { value } => Expression::Num { value },
@@ -197,6 +217,15 @@ impl Parser {
         Expression::Prog { prog }
     }
 
+    fn parse_lambda(&mut self, lambda_sign: &str) -> Expression {
+        self.skip_kw(lambda_sign);
+
+        Expression::Lambda {
+            vars: self.delimited("(", ")", ",", "var_name"),
+            body: Box::new(self.parse_expression()),
+        }
+    }
+
     fn delimited(&mut self, start: &str, stop: &str, sep: &str, parser: &str) -> Vec<Expression> {
         let mut vec = Vec::<Expression>::new();
         let mut first = true;
@@ -222,6 +251,7 @@ impl Parser {
 
             let expr = match parser {
                 "expression" => self.parse_expression(),
+                "var_name" => self.parse_var_name(),
                 _ => panic!("Unknown parser {}", parser),
             };
 

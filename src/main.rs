@@ -223,6 +223,99 @@ mod tests {
     }
 
     #[test]
+    fn it_parses_a_simple_lambda() {
+        let input = "
+            lambda () 1;
+        ";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[Expression::Lambda {
+                vars: vec![],
+                body: literal("num", "1"),
+            }],
+            &result,
+        );
+    }
+
+    #[test]
+    fn it_parses_a_lambda_with_args() {
+        let input = "
+            lambda (a_var, other-var,) {
+                1
+            };
+        ";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[Expression::Lambda {
+                vars: vec![
+                    Expression::Var {
+                        name: String::from("a_var"),
+                    },
+                    Expression::Var {
+                        name: String::from("other-var"),
+                    },
+                ],
+                body: literal("num", "1"),
+            }],
+            &result,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Expecting variable name, got '1'")]
+    fn it_only_allows_variable_names_in_lambda_variable_section() {
+        let input = "
+            lambda (a_var, 1) {
+                1
+            };
+        ";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[Expression::Lambda {
+                vars: vec![
+                    Expression::Var {
+                        name: String::from("a_var"),
+                    },
+                    Expression::Var {
+                        name: String::from("other-var"),
+                    },
+                ],
+                body: literal("num", "1"),
+            }],
+            &result,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Expecting variable name, but got to end of input")]
+    fn it_fails_if_got_to_end_of_input_when_reading_variable_names() {
+        let input = "lambda (a_var,";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[Expression::Lambda {
+                vars: vec![
+                    Expression::Var {
+                        name: String::from("a_var"),
+                    },
+                    Expression::Var {
+                        name: String::from("other-var"),
+                    },
+                ],
+                body: literal("num", "1"),
+            }],
+            &result,
+        );
+    }
+
+    #[test]
     fn it_ignores_comments() {
         let input = "# hi i am a comment\n1;";
 
