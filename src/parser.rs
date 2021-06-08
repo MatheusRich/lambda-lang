@@ -160,7 +160,10 @@ impl Parser {
 
         let cond = self.parse_expression();
 
-        self.skip_kw("then"); // if (!is_punc('{')) skip_kw('then');
+        if !self.is_punc("{") {
+            self.skip_kw("then")
+        };
+
         let then = self.parse_expression();
 
         Expression::If {

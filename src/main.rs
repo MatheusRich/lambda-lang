@@ -159,6 +159,28 @@ mod tests {
     }
 
     #[test]
+    fn it_parses_if_else_with_brackets() {
+        let input = "
+            if 0 {
+                1;
+            } else {
+                2;
+            };
+        ";
+
+        let result = parse_string(input);
+
+        assert_vec_eq(
+            &[Expression::If {
+                cond: literal("num", "0"),
+                then: literal("num", "1.0"),
+                otherwise: Some(literal("num", "2.0")),
+            }],
+            &result,
+        );
+    }
+
+    #[test]
     fn it_parses_empty_block() {
         let input = "{};";
 
@@ -179,10 +201,10 @@ mod tests {
     #[test]
     fn it_parses_multi_expression_block() {
         let input = "
-        {
-            1;
-            a_var;
-        };
+            {
+                1;
+                a_var;
+            };
         ";
 
         let result = parse_string(input);
