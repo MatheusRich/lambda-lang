@@ -1,10 +1,15 @@
+mod env;
 mod expr;
 mod input_stream;
+mod interpreter;
+mod l_value;
 mod parser;
 mod token;
 mod token_stream;
+use env::Env;
 use expr::Expr;
 use input_stream::InputStream;
+use l_value::LValue;
 use parser::Parser;
 use token::Token;
 use token_stream::TokenStream;

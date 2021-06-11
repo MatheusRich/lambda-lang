@@ -29,7 +29,7 @@ pub enum Expr {
         value: f64,
     },
     Assign {
-        operator: String,
+        operator: String, // remove this
         left: Box<Expr>,
         right: Box<Expr>,
     },
@@ -39,4 +39,22 @@ pub enum Expr {
         right: Box<Expr>,
     },
     Error,
+}
+
+impl Expr {
+    pub fn name(&self) -> String {
+        match self {
+            Expr::Lambda { .. } => "lambda".into(),
+            Expr::Block { .. } => "block".into(),
+            Expr::Call { .. } => "call".into(),
+            Expr::If { .. } => "if".into(),
+            Expr::Var { .. } => "variable".into(),
+            Expr::Bool { .. } => "boolean".into(),
+            Expr::Str { .. } => "string".into(),
+            Expr::Num { .. } => "number".into(),
+            Expr::Assign { .. } => "assign".into(),
+            Expr::Binary { .. } => "binary".into(),
+            Expr::Error => "error".into(),
+        }
+    }
 }
