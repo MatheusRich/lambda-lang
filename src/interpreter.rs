@@ -25,6 +25,21 @@ pub fn evaluate(expr: Expr, env: &mut Env) -> Result<LValue, String> {
             "==" | "!=" => apply_equality_op(operator.as_str(), *left, *right, env),
             _ => Err(format!("cannot apply binary operator {}", operator)),
         },
+        Expr::If {
+            cond,
+            then,
+            otherwise,
+        } => {
+            let cond = evaluate(*cond, env)?;
+
+            match cond {
+                LValue::Bool(false) => match otherwise {
+                    Some(else_branch) => evaluate(*else_branch, env),
+                    None => Ok(LValue::Bool(false)),
+                },
+                _ => evaluate(*then, env),
+            }
+        }
         Expr::Error => {
             Err("Internal interpreter error: don't know how to evaluate error expression".into())
         }
@@ -525,7 +540,7 @@ mod tests {
     }
 
     #[test]
-    fn it_evaluates_a_inequality_operator() {
+    fn it_evaluates_an_inequality_operator() {
         let input = Expr::Binary {
             operator: "!=".into(),
             left: Box::new(Expr::Bool { value: false }),
@@ -541,6 +556,45 @@ mod tests {
             operator: "!=".into(),
             left: Box::new(Expr::Num { value: 2.0 }),
             right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(false), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_an_if_else_expr() {
+        let input = Expr::If {
+            cond: Box::new(Expr::Num { value: 0.0 }),
+            then: Box::new(Expr::Num { value: 1.0 }),
+            otherwise: Some(Box::new(Expr::Num { value: 2.0 })),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(1.0), result.unwrap());
+
+        let input = Expr::If {
+            cond: Box::new(Expr::Bool { value: false }),
+            then: Box::new(Expr::Num { value: 1.0 }),
+            otherwise: Some(Box::new(Expr::Num { value: 2.0 })),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(2.0), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_an_if_expr_without_else() {
+        let input = Expr::If {
+            cond: Box::new(Expr::Bool { value: false }),
+            then: Box::new(Expr::Num { value: 1.0 }),
+            otherwise: None,
         };
 
         let result = evaluate(input, &mut Env::new());
