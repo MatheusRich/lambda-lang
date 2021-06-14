@@ -9,14 +9,14 @@ pub fn evaluate(expr: Expr, env: &mut Env) -> Result<LValue, String> {
         Expr::Assign { left, right, .. } => match *left {
             Expr::Var { name } => {
                 let rhs = evaluate(*right, env)?;
-                env.set(name, &rhs)
+                env.set(&name, &rhs)
             }
-            _ => Err(format!("cannot assign to {} expression", left.name())),
+            _ => Err(format!("cannot assign to {}", left.name())),
         },
         Expr::Error => {
             Err("Internal interpreter error: don't know how to evaluate error expression".into())
         }
-        _ => Err("lol".into()),
+        _ => Err(format!("Don't know how to evaluate expression {:?}", expr)),
     }
 }
 

@@ -15,6 +15,10 @@ impl Env {
         }
     }
 
+    pub fn is_root(&self) -> bool {
+        self.parent.is_none()
+    }
+
     pub fn with_enclosing(enclosing: Self) -> Self {
         Env {
             vars: HashMap::new(),
@@ -33,22 +37,39 @@ impl Env {
         }
     }
 
-    pub fn set(&mut self, name: String, value: &LValue) -> Result<LValue, String> {
-        if self.vars.contains_key(&name) {
-            self.vars.insert(name, value.clone());
-            return Ok(value.clone());
-        }
+    pub fn set(&mut self, name: &str, value: &LValue) -> Result<LValue, String> {
+        let is_global_scope = self.is_root();
+        let scope = self.lookup(name);
 
-        match &mut self.parent {
-            Some(parent) => parent.set(name, value),
-            None => Err(format!(
+        if scope.is_none() && !is_global_scope {
+            return Err(format!(
                 "attempting to assign to undefined variable {}",
                 name
-            )),
-        }
+            ));
+        };
+
+        let scope = match scope {
+            Some(s) => s,
+            None => self,
+        };
+
+        scope.vars.insert(name.into(), value.clone());
+
+        Ok(value.clone())
     }
 
     pub fn def(&mut self, name: String, value: &LValue) {
         self.vars.insert(name, value.clone());
+    }
+
+    fn lookup(&mut self, name: &str) -> Option<&mut Env> {
+        if self.vars.contains_key(name) {
+            return Some(self);
+        }
+
+        match &mut self.parent {
+            Some(env) => env.lookup(name),
+            None => None,
+        }
     }
 }
