@@ -32,8 +32,6 @@ fn main() {
             }
         }
     }
-
-    // println!("Parsed successfully: {:?}", parser.parse());
 }
 
 #[cfg(test)]
