@@ -40,6 +40,15 @@ pub fn evaluate(expr: Expr, env: &mut Env) -> Result<LValue, String> {
                 _ => evaluate(*then, env),
             }
         }
+        Expr::Block { exprs } => {
+            let mut result = LValue::Bool(false);
+
+            for expr in exprs {
+                result = evaluate(expr, env)?;
+            }
+
+            Ok(result)
+        }
         Expr::Error => {
             Err("Internal interpreter error: don't know how to evaluate error expression".into())
         }
@@ -596,6 +605,28 @@ mod tests {
             then: Box::new(Expr::Num { value: 1.0 }),
             otherwise: None,
         };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(false), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_a_block() {
+        let input = Expr::Block {
+            exprs: vec![Expr::Num { value: 1.0 }, Expr::Num { value: 2.0 }],
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(2.0), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_an_empty_block_to_false() {
+        let input = Expr::Block { exprs: vec![] };
 
         let result = evaluate(input, &mut Env::new());
 
