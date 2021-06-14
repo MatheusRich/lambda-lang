@@ -13,10 +13,90 @@ pub fn evaluate(expr: Expr, env: &mut Env) -> Result<LValue, String> {
             }
             _ => Err(format!("cannot assign to {}", left.name())),
         },
+        Expr::Binary {
+            left,
+            right,
+            operator,
+        } => match operator.as_str() {
+            "+" | "-" | "*" | "/" | "%" | ">" | "<" | "<=" | ">=" => {
+                apply_numeric_op(operator.as_str(), *left, *right, env)
+            }
+            "&&" | "||" => apply_logical_op(operator.as_str(), *left, *right, env),
+            "==" | "!=" => apply_equality_op(operator.as_str(), *left, *right, env),
+            _ => Err(format!("cannot apply binary operator {}", operator)),
+        },
         Expr::Error => {
             Err("Internal interpreter error: don't know how to evaluate error expression".into())
         }
         _ => Err(format!("Don't know how to evaluate expression {:?}", expr)),
+    }
+}
+
+fn apply_numeric_op(
+    operator: &str,
+    left: Expr,
+    right: Expr,
+    env: &mut Env,
+) -> Result<LValue, String> {
+    let lhs = evaluate(left.clone(), env)?;
+    let rhs = evaluate(right.clone(), env)?;
+
+    match (lhs, rhs) {
+        (LValue::Num(a), LValue::Num(b)) => match operator {
+            "+" => Ok(LValue::Num(a + b)),
+            "-" => Ok(LValue::Num(a - b)),
+            "*" => Ok(LValue::Num(a * b)),
+            "/" => Ok(LValue::Num(a / b)),
+            "%" => Ok(LValue::Num(a % b)),
+            "<" => Ok(LValue::Bool(a < b)),
+            ">" => Ok(LValue::Bool(a > b)),
+            "<=" => Ok(LValue::Bool(a <= b)),
+            ">=" => Ok(LValue::Bool(a >= b)),
+            _ => Err(format!("cannot apply numeric operator {}", operator)),
+        },
+        _ => Err(format!(
+            "expected two numbers, got {} {} {}",
+            left.name(),
+            operator,
+            right.name()
+        )),
+    }
+}
+
+fn apply_logical_op(
+    operator: &str,
+    left: Expr,
+    right: Expr,
+    env: &mut Env,
+) -> Result<LValue, String> {
+    let lhs = evaluate(left.clone(), env)?;
+
+    match operator {
+        "&&" => match lhs {
+            LValue::Bool(false) => Ok(LValue::Bool(false)),
+            _ => evaluate(right, env),
+        },
+        "||" => match lhs {
+            LValue::Bool(false) => evaluate(right, env),
+            _ => Ok(lhs),
+        },
+        _ => Err(format!("cannot apply logical operator {}", operator)),
+    }
+}
+
+fn apply_equality_op(
+    operator: &str,
+    left: Expr,
+    right: Expr,
+    env: &mut Env,
+) -> Result<LValue, String> {
+    let lhs = evaluate(left.clone(), env)?;
+    let rhs = evaluate(right.clone(), env)?;
+
+    match operator {
+        "==" => Ok(LValue::Bool(lhs == rhs)),
+        "!=" => Ok(LValue::Bool(lhs != rhs)),
+        _ => Err(format!("cannot apply equality operator {}", operator)),
     }
 }
 
@@ -108,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn it_deny_assigning_to_expr_that_is_not_a_variable() {
+    fn it_denies_assigning_to_expr_that_is_not_a_variable() {
         let input = Expr::Assign {
             operator: "=".into(),
             left: Box::new(Expr::Str {
@@ -122,10 +202,351 @@ mod tests {
         let result = evaluate(input, &mut env);
 
         assert!(result.is_err());
+        assert_eq!(String::from("cannot assign to string"), result.unwrap_err());
+    }
+
+    #[test]
+    fn it_evaluates_a_sum() {
+        let input = Expr::Binary {
+            operator: "+".into(),
+            left: Box::new(Expr::Num { value: 1.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(3.0), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_a_sum_with_variables() {
+        let input = Expr::Binary {
+            operator: "+".into(),
+            left: Box::new(Expr::Var { name: "a".into() }),
+            right: Box::new(Expr::Var { name: "b".into() }),
+        };
+
+        let mut env = Env::new();
+        env.set("a", &LValue::Num(1.0)).unwrap();
+        env.set("b", &LValue::Num(2.0)).unwrap();
+
+        let result = evaluate(input, &mut env);
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(3.0), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_a_subtraction() {
+        let input = Expr::Binary {
+            operator: "-".into(),
+            left: Box::new(Expr::Num { value: 1.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(-1.0), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_a_multiplication() {
+        let input = Expr::Binary {
+            operator: "*".into(),
+            left: Box::new(Expr::Num { value: 2.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(4.0), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_a_division() {
+        let input = Expr::Binary {
+            operator: "/".into(),
+            left: Box::new(Expr::Num { value: 2.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(1.0), result.unwrap());
+    }
+
+    #[test]
+    fn it_does_not_error_on_a_division_by_zero() {
+        let input = Expr::Binary {
+            operator: "/".into(),
+            left: Box::new(Expr::Num { value: 2.0 }),
+            right: Box::new(Expr::Num { value: 0.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(f64::INFINITY), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_a_mod_operation() {
+        let input = Expr::Binary {
+            operator: "%".into(),
+            left: Box::new(Expr::Num { value: 5.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(1.0), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_greater_than() {
+        let input = Expr::Binary {
+            operator: ">".into(),
+            left: Box::new(Expr::Num { value: 5.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(true), result.unwrap());
+
+        let input = Expr::Binary {
+            operator: ">".into(),
+            left: Box::new(Expr::Num { value: 2.0 }),
+            right: Box::new(Expr::Num { value: 5.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(false), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_smaller_than() {
+        let input = Expr::Binary {
+            operator: "<".into(),
+            left: Box::new(Expr::Num { value: 2.0 }),
+            right: Box::new(Expr::Num { value: 5.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(true), result.unwrap());
+
+        let input = Expr::Binary {
+            operator: "<".into(),
+            left: Box::new(Expr::Num { value: 5.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(false), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_greater_or_equals_than() {
+        let input = Expr::Binary {
+            operator: ">=".into(),
+            left: Box::new(Expr::Num { value: 5.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(true), result.unwrap());
+
+        let input = Expr::Binary {
+            operator: ">=".into(),
+            left: Box::new(Expr::Num { value: 2.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(true), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_smaller_or_equals_than() {
+        let input = Expr::Binary {
+            operator: "<=".into(),
+            left: Box::new(Expr::Num { value: 2.0 }),
+            right: Box::new(Expr::Num { value: 5.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(true), result.unwrap());
+
+        let input = Expr::Binary {
+            operator: "<=".into(),
+            left: Box::new(Expr::Num { value: 2.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(true), result.unwrap());
+    }
+
+    #[test]
+    fn it_assert_numeric_inputs() {
+        let input = Expr::Binary {
+            operator: "+".into(),
+            left: Box::new(Expr::Num { value: 1.0 }),
+            right: Box::new(Expr::Str {
+                value: "hello".into(),
+            }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_err());
         assert_eq!(
-            String::from("cannot assign to string expression"),
+            String::from("expected two numbers, got number + string"),
             result.unwrap_err()
         );
+    }
+
+    #[test]
+    fn it_evaluates_a_logical_and_operator() {
+        let input = Expr::Binary {
+            operator: "&&".into(),
+            left: Box::new(Expr::Num { value: 1.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(2.0), result.unwrap());
+    }
+
+    #[test]
+    fn it_does_not_evaluate_rhs_if_lhs_is_false_on_a_and_operator() {
+        let input = Expr::Binary {
+            operator: "&&".into(),
+            left: Box::new(Expr::Bool { value: false }),
+            right: Box::new(Expr::Error),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(false), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_a_logical_or_operator() {
+        let input = Expr::Binary {
+            operator: "||".into(),
+            left: Box::new(Expr::Bool { value: false }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Num(2.0), result.unwrap());
+    }
+
+    #[test]
+    fn it_does_not_evaluate_rhs_if_lhs_is_truthy_on_a_or_operator() {
+        let input = Expr::Binary {
+            operator: "||".into(),
+            left: Box::new(Expr::Str { value: "".into() }),
+            right: Box::new(Expr::Error),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Str("".into()), result.unwrap());
+    }
+
+    #[test]
+    fn it_does_not_evaluate_invalid_binary_operators() {
+        let input = Expr::Binary {
+            operator: "?".into(),
+            left: Box::new(Expr::Num { value: 1.0 }),
+            right: Box::new(Expr::Num { value: 1.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_err());
+        assert_eq!(
+            String::from("cannot apply binary operator ?"),
+            result.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn it_evaluates_an_equality_operator() {
+        let input = Expr::Binary {
+            operator: "==".into(),
+            left: Box::new(Expr::Num { value: 2.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(true), result.unwrap());
+
+        let input = Expr::Binary {
+            operator: "==".into(),
+            left: Box::new(Expr::Bool { value: false }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(false), result.unwrap());
+    }
+
+    #[test]
+    fn it_evaluates_a_inequality_operator() {
+        let input = Expr::Binary {
+            operator: "!=".into(),
+            left: Box::new(Expr::Bool { value: false }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(true), result.unwrap());
+
+        let input = Expr::Binary {
+            operator: "!=".into(),
+            left: Box::new(Expr::Num { value: 2.0 }),
+            right: Box::new(Expr::Num { value: 2.0 }),
+        };
+
+        let result = evaluate(input, &mut Env::new());
+
+        assert!(result.is_ok());
+        assert_eq!(LValue::Bool(false), result.unwrap());
     }
 
     #[test]
