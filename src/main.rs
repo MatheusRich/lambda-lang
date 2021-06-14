@@ -9,6 +9,7 @@ mod token_stream;
 use env::Env;
 use expr::Expr;
 use input_stream::InputStream;
+use interpreter::evaluate;
 use l_value::LValue;
 use parser::Parser;
 use token::Token;
@@ -17,14 +18,22 @@ use token_stream::TokenStream;
 fn main() {
     use std::io::{stdin, stdout, Write};
 
-    print!("> ");
-    let _ = stdout().flush();
+    let global_env = &mut Env::new();
 
-    let mut input = String::new();
-    stdin().read_line(&mut input).expect("Invalid string");
-    let mut parser = Parser::new(TokenStream::new(InputStream::new(input)));
+    loop {
+        print!("> ");
+        let _ = stdout().flush();
+        let mut input = String::new();
+        stdin().read_line(&mut input).expect("Invalid string");
+        for expr in Parser::new(TokenStream::new(InputStream::new(input))).parse() {
+            match evaluate(expr, global_env) {
+                Ok(value) => println!("{:?}", value),
+                Err(msg) => println!("[RUNTIME ERROR] {}", msg),
+            }
+        }
+    }
 
-    println!("Parsed successfully: {:?}", parser.parse());
+    // println!("Parsed successfully: {:?}", parser.parse());
 }
 
 #[cfg(test)]
