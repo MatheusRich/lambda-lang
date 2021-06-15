@@ -1,4 +1,4 @@
-use super::{Env, Expr, LValue};
+use super::{Env, Expr, LValue, Lambda};
 
 pub fn evaluate(expr: Expr, env: &mut Env) -> Result<LValue, String> {
     match expr {
@@ -40,6 +40,37 @@ pub fn evaluate(expr: Expr, env: &mut Env) -> Result<LValue, String> {
                 _ => evaluate(*then, env),
             }
         }
+        Expr::Lambda { vars, body } => Ok(LValue::Lambda(Lambda {
+            body: *body,
+            env: env.clone(),
+            vars: {
+                let mut strings = vec![];
+
+                for var in vars {
+                    if let Expr::Str { value } = var {
+                        strings.push(value);
+                    }
+                }
+
+                strings
+            },
+        })),
+        Expr::Call { func, args } => {
+            let lambda = evaluate(*func, env)?;
+
+            match lambda {
+                LValue::Lambda(a_lambda) => {
+                    let mut evaluated_args = vec![];
+
+                    for arg in args {
+                        evaluated_args.push(evaluate(arg, env)?);
+                    }
+
+                    a_lambda.call(evaluated_args)
+                }
+                _ => Err(format!("Unable to call on {:?}", lambda.name())),
+            }
+        }
         Expr::Block { exprs } => {
             let mut result = LValue::Bool(false);
 
@@ -52,7 +83,6 @@ pub fn evaluate(expr: Expr, env: &mut Env) -> Result<LValue, String> {
         Expr::Error => {
             Err("Internal interpreter error: don't know how to evaluate error expression".into())
         }
-        _ => Err(format!("Don't know how to evaluate expression {:?}", expr)),
     }
 }
 
@@ -65,7 +95,7 @@ fn apply_numeric_op(
     let lhs = evaluate(left.clone(), env)?;
     let rhs = evaluate(right.clone(), env)?;
 
-    match (lhs, rhs) {
+    match (&lhs, &rhs) {
         (LValue::Num(a), LValue::Num(b)) => match operator {
             "+" => Ok(LValue::Num(a + b)),
             "-" => Ok(LValue::Num(a - b)),
@@ -80,9 +110,9 @@ fn apply_numeric_op(
         },
         _ => Err(format!(
             "expected two numbers, got {} {} {}",
-            left.name(),
+            lhs.name(),
             operator,
-            right.name()
+            rhs.name()
         )),
     }
 }

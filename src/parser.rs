@@ -57,7 +57,7 @@ impl Parser {
 
     fn parse_var_name(&mut self) -> Expr {
         match self.input.next() {
-            Some(Token::Var { value }) => Expr::Var { name: value },
+            Some(Token::Var { value }) => Expr::Str { value },
             Some(other) => {
                 self.input
                     .syntax_error(&format!("Expecting variable name, got '{}'", other));
@@ -103,6 +103,8 @@ impl Parser {
             let right = self.parse_atom();
 
             let new_left = if op == "=" {
+                // TODO: check if left is Var here, not in interpreter.
+
                 Expr::Assign {
                     operator: op,
                     left: Box::new(left.clone()),

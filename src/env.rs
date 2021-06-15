@@ -1,7 +1,7 @@
 use super::LValue;
 use std::collections::HashMap;
 
-// #[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Env {
     vars: HashMap<String, LValue>,
     parent: Option<Box<Env>>,
