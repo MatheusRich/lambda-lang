@@ -10,12 +10,23 @@ use env::Env;
 use expr::Expr;
 use input_stream::InputStream;
 use interpreter::evaluate;
-use l_value::LValue;
+use l_value::{LValue, Lambda};
 use parser::Parser;
+use std::env::args;
 use token::Token;
 use token_stream::TokenStream;
 
 fn main() {
+    let given_args: Vec<String> = args().collect();
+
+    match args().len() {
+        1 => repl(),
+        2 => run_file(&given_args[1]),
+        _ => println!("Wrong number of arguments"),
+    }
+}
+
+fn repl() {
     use std::io::{stdin, stdout, Write};
 
     let global_env = &mut Env::new();
@@ -30,6 +41,23 @@ fn main() {
                 Ok(value) => println!("{:?}", value),
                 Err(msg) => println!("[RUNTIME ERROR] {}", msg),
             }
+        }
+    }
+}
+
+fn run_file(filename: &str) {
+    use std::fs::File;
+    use std::io::prelude::*;
+
+    let mut file = File::open(filename).expect("Could not open file");
+    let mut input = String::new();
+    file.read_to_string(&mut input)
+        .expect("Could not read file");
+
+    let global_env = &mut Env::new();
+    for expr in Parser::new(TokenStream::new(InputStream::new(input))).parse() {
+        if let Err(msg) = evaluate(expr, global_env) {
+            println!("[RUNTIME ERROR] {}", msg)
         }
     }
 }
@@ -271,11 +299,11 @@ mod tests {
         assert_vec_eq(
             &[Expr::Lambda {
                 vars: vec![
-                    Expr::Var {
-                        name: String::from("a_var"),
+                    Expr::Str {
+                        value: String::from("a_var"),
                     },
-                    Expr::Var {
-                        name: String::from("other-var"),
+                    Expr::Str {
+                        value: String::from("other-var"),
                     },
                 ],
                 body: literal("num", "1"),
