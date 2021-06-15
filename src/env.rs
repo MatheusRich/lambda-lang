@@ -1,4 +1,4 @@
-use super::LValue;
+use super::{define_prelude, LValue};
 use std::collections::HashMap;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -9,10 +9,14 @@ pub struct Env {
 
 impl Env {
     pub fn new() -> Self {
-        Env {
+        let mut env = Env {
             vars: HashMap::new(),
             parent: None,
-        }
+        };
+
+        define_prelude(&mut env);
+
+        env
     }
 
     pub fn is_root(&self) -> bool {

@@ -4,6 +4,7 @@ mod input_stream;
 mod interpreter;
 mod l_value;
 mod parser;
+mod prelude;
 mod token;
 mod token_stream;
 use env::Env;
@@ -12,6 +13,7 @@ use input_stream::InputStream;
 use interpreter::evaluate;
 use l_value::{LValue, Lambda};
 use parser::Parser;
+use prelude::define_prelude;
 use std::env::args;
 use token::Token;
 use token_stream::TokenStream;
@@ -22,7 +24,7 @@ fn main() {
     match args().len() {
         1 => repl(),
         2 => run_file(&given_args[1]),
-        _ => println!("Wrong number of arguments"),
+        _ => println!("Wrong number of arguments!"),
     }
 }
 
@@ -38,8 +40,8 @@ fn repl() {
         stdin().read_line(&mut input).expect("Invalid string");
         for expr in Parser::new(TokenStream::new(InputStream::new(input))).parse() {
             match evaluate(expr, global_env) {
-                Ok(value) => println!("{:?}", value),
-                Err(msg) => println!("[RUNTIME ERROR] {}", msg),
+                Ok(value) => println!("=> {}", value),
+                Err(msg) => println!("RUNTIME ERROR: {}.", msg),
             }
         }
     }
@@ -57,7 +59,7 @@ fn run_file(filename: &str) {
     let global_env = &mut Env::new();
     for expr in Parser::new(TokenStream::new(InputStream::new(input))).parse() {
         if let Err(msg) = evaluate(expr, global_env) {
-            println!("[RUNTIME ERROR] {}", msg)
+            println!("[RUNTIME ERROR] {}.", msg)
         }
     }
 }
