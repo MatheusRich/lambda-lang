@@ -6,6 +6,7 @@ pub enum LValue {
     Num(f64),
     Bool(bool),
     Lambda(Lambda),
+    Lambda2(Box<fn(Vec<LValue>) -> LValue>),
 }
 
 impl LValue {
@@ -15,7 +16,22 @@ impl LValue {
             LValue::Num(_) => "number",
             LValue::Bool(_) => "boolean",
             LValue::Lambda(_) => "lambda",
+            LValue::Lambda2(_) => "lambda2",
         }
+    }
+}
+
+impl std::fmt::Display for LValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let result = match self {
+            LValue::Str(string) => string.clone(),
+            LValue::Num(num) => num.to_string(),
+            LValue::Bool(boolean) => boolean.to_string(),
+            LValue::Lambda(_) => "lambda".to_string(),
+            LValue::Lambda2(_fun) => "lambda()".to_string(),
+        };
+
+        write!(f, "{}", result)
     }
 }
 

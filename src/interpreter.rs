@@ -59,16 +59,25 @@ pub fn evaluate(expr: Expr, env: &mut Env) -> Result<LValue, String> {
             let lambda = evaluate(*func, env)?;
 
             match lambda {
-                LValue::Lambda(a_lambda) => {
+                LValue::Lambda(lambda_obj) => {
                     let mut evaluated_args = vec![];
 
                     for arg in args {
                         evaluated_args.push(evaluate(arg, env)?);
                     }
 
-                    a_lambda.call(evaluated_args)
+                    lambda_obj.call(evaluated_args)
                 }
-                _ => Err(format!("Unable to call on {:?}", lambda.name())),
+                LValue::Lambda2(f) => {
+                    let mut evaluated_args = vec![];
+
+                    for arg in args {
+                        evaluated_args.push(evaluate(arg, env)?);
+                    }
+
+                    Ok(f(evaluated_args))
+                }
+                _ => Err(format!("{} is not a lambda", lambda.name())),
             }
         }
         Expr::Block { exprs } => {
