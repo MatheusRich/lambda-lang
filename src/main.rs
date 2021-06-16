@@ -59,7 +59,9 @@ fn run_file(filename: &str) {
     let global_env = &mut Env::new();
     for expr in Parser::new(TokenStream::new(InputStream::new(input))).parse() {
         if let Err(msg) = evaluate(expr, global_env) {
-            println!("[RUNTIME ERROR] {}.", msg)
+            println!("\n[RUNTIME ERROR] {}.", msg);
+
+            std::process::exit(-1);
         }
     }
 }
